@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Comparison Result</title>
+</head>
+<body>
+    <h1>Common Movies in Watchlists</h1>
+    <ul>
+        {% for movie in common_movies %}
+            <li>{{ movie }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/">Compare again</a>
+</body>
+</html>
