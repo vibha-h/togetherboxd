@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Togetherboxd</title>
+  <style>
+    :root {
+      --bg: #14171C;
+      --text: #556678;
+      --accent: #F27405;
+      --card: #14171C;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    form {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    input {
+      padding: 0.5rem 1rem;
+      background: var(--card);
+      border: 1px solid #444;
+      color: var(--text);
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 0.5rem 1.2rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #poster-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 16px;
+      margin-top: 1rem;
+    }
+
+    .poster-item {
+      /* background: var(--card); */
+      border-radius: 6px;
+      padding: 0.5rem;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .poster-item:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .poster-item img {
+      width: 100%;
+      border-radius: 4px;
+      margin-bottom: 0.3rem;
+    }
+
+    .poster-item span {
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    #status-message {
+      font-style: italic;
+      margin-bottom: 1rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Compare Letterboxd Watchlists!</h1>
+
+<form id="compareForm">
+  <input type="text" name="user1" placeholder="Username 1" required>
+  <input type="text" name="user2" placeholder="Username 2" required>
+  <button type="submit">Compare</button>
+</form>
+
+<div id="status-message">Enter two letterboxd usernames to get started!</div>
+
+<div id="poster-grid"></div>
+
+<script>
+document.getElementById('compareForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const u1 = e.target.user1.value.trim();
+  const u2 = e.target.user2.value.trim();
+
+  const statusEl = document.getElementById('status-message');
+  const grid = document.getElementById('poster-grid');
+
+  statusEl.textContent = `Scraping watchlists for ${u1} and ${u2}...`;
+  grid.innerHTML = '';
+
+  const source = new EventSource(`/compare-stream?user=${u1}&user=${u2}`);
+
+  source.onmessage = function(event) {
+    const line = event.data;
+
+    if (line.startsWith("COMPARISON_RESULT:")) {
+      const json = line.replace("COMPARISON_RESULT:", "");
+      const films = JSON.parse(json);
+
+      if (films.length === 0) {
+        statusEl.textContent = "No common films found.";
+      } else {
+        // statusEl.textContent = `${u1} & ${u2} watchlist:`;
+        statusEl.textContent = `Found ${films.length} common films!`;
+        films.forEach(film => {
+          const div = document.createElement('div');
+          div.className = 'poster-item';
+          div.innerHTML = `
+            <a href="${film.link}" target="_blank">
+              <img src="${film.poster}" alt="${film.title}">
+            </a>
+            <span>${film.title}</span>
+          `;
+          grid.appendChild(div);
+        });
+      }
+
+      source.close();
+    } else if (line.startsWith("ERROR:")) {
+      statusEl.textContent = line.replace("ERROR: ", "❌ Error: ");
+      source.close();
+    } else {
+      statusEl.textContent = line; // live progress text
+    }
+  };
+
+  source.onerror = function() {
+    statusEl.textContent = "[Connection closed]";
+    source.close();
+  };
+});
+</script>
+
+</body>
+</html>
