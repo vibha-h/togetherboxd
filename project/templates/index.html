@@ -151,8 +151,8 @@ document.getElementById('compareForm').addEventListener('submit', function(e) {
       if (films.length === 0) {
         statusEl.textContent = "No common films found.";
       } else {
-        // statusEl.textContent = `${u1} & ${u2} watchlist:`;
         statusEl.textContent = `Found ${films.length} common films!`;
+        statusEl.innerHTML = `<span style="font-size:1.3em;font-weight:bold;">${u1} &amp; ${u2}'s shared watchlist:</span>`;
         films.forEach(film => {
           const div = document.createElement('div');
           div.className = 'poster-item';
