@@ -54,6 +54,10 @@ def compare_stream():
         except requests.RequestException as e:
             return {'error': f'network error for {username}: {str(e)}'}
 
+        # If no films found, return a specific error
+        if not films:
+            return {'error': f"user {username}'s watchlist is empty"}
+
         # store in cache
         try:
             USER_CACHE[username] = {'films': films, 'ts': time.time()}
@@ -80,7 +84,7 @@ def compare_stream():
             if cached:
                 if CACHE_TTL_SECONDS is None or (time.time() - cached['ts'] <= CACHE_TTL_SECONDS):
                     user_watchlists[u] = {film['title']: film for film in cached['films']}
-                    yield f"data: Using cached watchlist for {u}. {len(cached['films'])} films.\n\n"
+                    # yield f"data: Using cached watchlist for {u}. {len(cached['films'])} films.\n\n"
                     continue
             to_scrape.append(u)
 
@@ -89,9 +93,9 @@ def compare_stream():
             with ThreadPoolExecutor(max_workers=min(4, len(to_scrape))) as ex:
                 futures = {ex.submit(scrape_user, u): u for u in to_scrape}
 
-                # inform frontend that tasks started
-                for u in to_scrape:
-                    yield f"data: Starting scrape for {u}...\n\n"
+                # # inform frontend that tasks started
+                # for u in to_scrape:
+                #     yield f"data: Starting scrape for {u}...\n\n"
 
                 for fut in as_completed(futures):
                     username = futures[fut]
@@ -106,7 +110,7 @@ def compare_stream():
                         continue
 
                     films = result.get('films', [])
-                    yield f"data: {username} done scraping. {len(films)} films collected.\n\n"
+                    # yield f"data: {username} done scraping. {len(films)} films collected.\n\n"
                     user_watchlists[username] = {film['title']: film for film in films}
 
         # compute intersection
